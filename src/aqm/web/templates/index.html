@@ -55,6 +55,8 @@
     .chart-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
     .chart-head .ctitle { font-size: 15px; font-weight: 600; }
     .chart-head .csub { color: var(--muted); font-size: 11px; }
+    .cdesc { color: var(--muted); font-size: 12px; line-height: 1.35; margin: -2px 0 8px; }
+    .info { color: var(--muted); cursor: help; font-size: 11px; vertical-align: super; }
     footer { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
   </style>
 </head>
@@ -120,8 +122,8 @@
           return;
         }
         cards.innerHTML = data.metrics.map(m => `
-          <div class="card ${m.status}">
-            <div class="label">${m.label}</div>
+          <div class="card ${m.status}" title="${m.description}">
+            <div class="label">${m.label} <span class="info" title="${m.description}">ⓘ</span></div>
             <div class="value">${m.display}<span class="unit">${m.unit}</span></div>
             <div class="age">${ago(m.age_seconds)}</div>
           </div>`).join('');
@@ -157,13 +159,15 @@
       const container = document.getElementById('charts');
       container.innerHTML = '';
       metricsMeta.forEach(meta => {
-        const sub = meta.good_max != null
+        const thr = meta.good_max != null
           ? `good ≤ ${meta.good_max} · moderate ≤ ${meta.moderate_max} ${meta.unit}`
           : meta.unit;
         const box = document.createElement('div');
         box.className = 'chart-box';
         box.innerHTML = `<div class="chart-head"><span class="ctitle">${meta.label}</span>
-          <span class="csub">${sub}</span></div><canvas id="chart-${meta.key}" height="150"></canvas>`;
+          <span class="csub">${thr}</span></div>
+          <div class="cdesc">${meta.description}</div>
+          <canvas id="chart-${meta.key}" height="150"></canvas>`;
         container.appendChild(box);
         charts[meta.key] = makeChart(meta);
       });

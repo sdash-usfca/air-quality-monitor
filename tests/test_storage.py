@@ -41,3 +41,18 @@ def test_mock_sensor_uses_known_metrics():
     assert values["co2"] >= 420
     for key in values:
         assert key in METRICS, f"mock produced unknown metric '{key}'"
+
+
+def test_mock_simulates_events_over_time():
+    # Drive the simulator forward in 10s steps (~5.5h) and confirm it produces
+    # realistic events: a cooking PM2.5 spike and a CO2 climb while "occupied".
+    s = MockSensor(seed=1)
+    t = 1_000_000.0
+    peak_pm, peak_co2 = 0.0, 0.0
+    for _ in range(2000):
+        t += 10
+        v = s._read_at(t)
+        peak_pm = max(peak_pm, v["pm2_5"])
+        peak_co2 = max(peak_co2, v["co2"])
+    assert peak_pm > 30, "expected a cooking spike well above the ~5 µg/m³ baseline"
+    assert peak_co2 > 1000, "expected CO2 to climb during an occupied stretch"

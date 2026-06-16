@@ -42,6 +42,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
                 "display": spec.format(value),
                 "status": spec.status(value).value,
                 "age_seconds": now - ts,
+                "description": spec.description,
             })
         return jsonify({"metrics": metrics, "server_time": now})
 
@@ -61,7 +62,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
             out.append({
                 "key": key, "label": spec.label, "unit": spec.unit,
                 "good_max": spec.good_max, "moderate_max": spec.moderate_max,
-                "precision": spec.precision,
+                "precision": spec.precision, "description": spec.description,
             })
         return jsonify({"metrics": out})
 
