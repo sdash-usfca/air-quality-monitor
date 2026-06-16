@@ -66,6 +66,17 @@ cp config.example.yaml config.yaml
 Then enable I²C/SPI/UART and install the services — see
 [docs/WIRING.md](docs/WIRING.md) and [scripts/install.sh](scripts/install.sh).
 
+### Updating the Pi after a code change
+
+From your laptop, one command rsyncs the code, restarts the services, and verifies:
+
+```bash
+./scripts/deploy.sh airmon@10.0.0.94      # i.e. user@<pi-ip>
+```
+
+Target the Pi by **IP**, not `<host>.local` — mDNS can transiently fail to resolve
+and make the copy fail silently, leaving the Pi on old code.
+
 ## Architecture
 
 ```

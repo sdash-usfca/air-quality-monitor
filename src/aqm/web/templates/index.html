@@ -56,7 +56,6 @@
     .chart-head .ctitle { font-size: 15px; font-weight: 600; }
     .chart-head .csub { color: var(--muted); font-size: 11px; }
     .cdesc { color: var(--muted); font-size: 12px; line-height: 1.35; margin: -2px 0 8px; }
-    .info { color: var(--muted); cursor: help; font-size: 11px; vertical-align: super; }
     footer { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
   </style>
 </head>
@@ -122,8 +121,8 @@
           return;
         }
         cards.innerHTML = data.metrics.map(m => `
-          <div class="card ${m.status}" title="${m.description}">
-            <div class="label">${m.label} <span class="info" title="${m.description}">ⓘ</span></div>
+          <div class="card ${m.status}">
+            <div class="label">${m.label}</div>
             <div class="value">${m.display}<span class="unit">${m.unit}</span></div>
             <div class="age">${ago(m.age_seconds)}</div>
           </div>`).join('');
