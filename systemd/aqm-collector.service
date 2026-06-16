@@ -1,0 +1,15 @@
+[Unit]
+Description=AQM sensor collector
+After=multi-user.target
+
+[Service]
+Type=simple
+# Adjust User and the paths to match your Pi (default Bookworm user is often your own login).
+User=pi
+WorkingDirectory=/home/pi/air-quality-monitor
+ExecStart=/home/pi/air-quality-monitor/.venv/bin/aqm-collect
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

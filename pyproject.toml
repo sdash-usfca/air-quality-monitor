@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aqm"
+version = "0.1.0"
+description = "Indoor air quality monitor for the Raspberry Pi (CO2, particulates, VOC, temp/humidity) with a web dashboard and a TFT display."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Sukirti Dash" }]
+keywords = ["raspberry-pi", "air-quality", "co2", "iot", "sensors", "home"]
+dependencies = [
+    "flask>=2.3",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Install on the Raspberry Pi to pull in the real sensor + display drivers:
+#   pip install -e ".[pi]"
+pi = [
+    "adafruit-blinka>=8.0",
+    "adafruit-circuitpython-scd4x>=1.4",
+    "adafruit-circuitpython-bme680>=3.7",
+    "pms5003>=1.0",
+    "pillow>=9.0",
+    "st7789>=0.0.4",
+]
+# Just the display rendering — enough to preview the screen layout to a PNG on a laptop.
+display = ["pillow>=9.0"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+aqm-collect = "aqm.collector.__main__:main"
+aqm-web = "aqm.web.__main__:main"
+aqm-display = "aqm.display.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+aqm = ["web/templates/*.html"]

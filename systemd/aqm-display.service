@@ -1,0 +1,14 @@
+[Unit]
+Description=AQM TFT display
+After=aqm-collector.service
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/air-quality-monitor
+ExecStart=/home/pi/air-quality-monitor/.venv/bin/aqm-display
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

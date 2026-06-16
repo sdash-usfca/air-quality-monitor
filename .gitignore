@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# App
+config.yaml
+*.db
+*.db-wal
+*.db-shm
+preview*.png
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

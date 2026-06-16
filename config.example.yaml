@@ -1,0 +1,30 @@
+# Copy this to config.yaml and edit. The app looks for ./config.yaml
+# (override with the AQM_CONFIG environment variable).
+
+# Which sensors to read, in priority order. If two sensors report the same
+# metric, the one listed FIRST wins (see docs/ARCHITECTURE.md).
+#   - On a laptop, use [mock] to develop the whole app without any hardware.
+#   - On the Pi, use the real drivers, e.g. [scd41, bme680, pms5003].
+sensors:
+  - mock
+
+# How often to read every sensor, in seconds. Keep >= 5 (the SCD41 produces a
+# fresh CO2 sample every ~5 seconds).
+interval_seconds: 10
+
+# Time-series database file (SQLite).
+db_path: aqm.db
+
+# How long to keep history. Older rows are pruned each cycle. 0 = keep forever.
+retention_days: 30
+
+web:
+  host: 0.0.0.0   # 0.0.0.0 = reachable from other devices on your home network
+  port: 8000
+
+display:
+  enabled: false  # set true on the Pi once the ST7789 TFT is wired
+  width: 240
+  height: 240
+  rotation: 0
+  refresh_seconds: 5

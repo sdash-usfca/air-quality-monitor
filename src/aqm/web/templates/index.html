@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Air Quality</title>
+  <style>
+    :root {
+      --bg: #121216; --card: #1d1d24; --fg: #ececec; --muted: #8a8a96;
+      --good: #2ecc71; --moderate: #f1c40f; --poor: #e74c3c; --unknown: #7f8c8d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+    header { padding: 20px 24px 4px; }
+    h1 { margin: 0; font-size: 20px; font-weight: 600; }
+    #updated { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .grid {
+      display: grid; gap: 14px; padding: 16px 24px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    .card {
+      background: var(--card); border-radius: 14px; padding: 16px;
+      border-left: 6px solid var(--unknown);
+    }
+    .card.good { border-left-color: var(--good); }
+    .card.moderate { border-left-color: var(--moderate); }
+    .card.poor { border-left-color: var(--poor); }
+    .card .label { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; }
+    .card .value { font-size: 38px; font-weight: 700; line-height: 1.1; margin-top: 6px; }
+    .card .unit { font-size: 15px; color: var(--muted); font-weight: 500; margin-left: 4px; }
+    .badge {
+      display: inline-block; margin-top: 10px; font-size: 11px; padding: 2px 8px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; color: #111;
+    }
+    .badge.good { background: var(--good); } .badge.moderate { background: var(--moderate); }
+    .badge.poor { background: var(--poor); } .badge.unknown { background: var(--unknown); color: #fff; }
+    .charts { padding: 0 24px 32px; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .chart-box { background: var(--card); border-radius: 14px; padding: 16px; }
+    .chart-box h2 { margin: 0 0 10px; font-size: 14px; color: var(--muted); font-weight: 600; }
+    footer { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌬️ Air Quality</h1>
+    <div id="updated">connecting…</div>
+  </header>
+
+  <section id="cards" class="grid"></section>
+
+  <section class="charts">
+    <div class="chart-box"><h2>CO₂ — last 6 hours (ppm)</h2><canvas id="chart-co2" height="160"></canvas></div>
+    <div class="chart-box"><h2>PM2.5 — last 6 hours (µg/m³)</h2><canvas id="chart-pm2_5" height="160"></canvas></div>
+  </section>
+
+  <footer>Auto-refreshes every 5s · data from this device's collector</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    const COLORS = { good: '#2ecc71', moderate: '#f1c40f', poor: '#e74c3c', unknown: '#7f8c8d' };
+
+    function ago(s) {
+      if (s < 60) return s + 's ago';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      return Math.floor(s / 3600) + 'h ago';
+    }
+
+    async function refreshCards() {
+      try {
+        const res = await fetch('/api/latest');
+        const data = await res.json();
+        const cards = document.getElementById('cards');
+        if (!data.metrics.length) {
+          document.getElementById('updated').textContent =
+            'no readings yet — is the collector running?';
+          return;
+        }
+        cards.innerHTML = data.metrics.map(m => `
+          <div class="card ${m.status}">
+            <div class="label">${m.label}</div>
+            <div class="value">${m.display}<span class="unit">${m.unit}</span></div>
+            <span class="badge ${m.status}">${m.status}</span>
+            <div class="label" style="margin-top:8px">${ago(m.age_seconds)}</div>
+          </div>`).join('');
+        document.getElementById('updated').textContent =
+          'updated ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        document.getElementById('updated').textContent = 'connection lost…';
+      }
+    }
+
+    const charts = {};
+    function makeChart(id, color) {
+      if (!window.Chart) return null;
+      const ctx = document.getElementById(id).getContext('2d');
+      return new Chart(ctx, {
+        type: 'line',
+        data: { datasets: [{ data: [], borderColor: color, backgroundColor: color + '33',
+                             borderWidth: 2, pointRadius: 0, fill: true, tension: 0.3 }] },
+        options: {
+          animation: false, plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              type: 'linear',
+              ticks: {
+                color: '#8a8a96', maxTicksLimit: 6,
+                callback: v => new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              },
+              grid: { color: '#2a2a33' }
+            },
+            y: { ticks: { color: '#8a8a96' }, grid: { color: '#2a2a33' } }
+          }
+        }
+      });
+    }
+
+    async function refreshChart(metric, chart) {
+      if (!chart) return;
+      const res = await fetch('/api/history?metric=' + metric + '&hours=6');
+      const data = await res.json();
+      chart.data.datasets[0].data = data.points.map(p => ({ x: p[0] * 1000, y: p[1] }));
+      chart.update();
+    }
+
+    function start() {
+      charts.co2 = makeChart('chart-co2', COLORS.poor);
+      charts.pm2_5 = makeChart('chart-pm2_5', COLORS.good);
+      refreshCards();
+      refreshChart('co2', charts.co2);
+      refreshChart('pm2_5', charts.pm2_5);
+      setInterval(refreshCards, 5000);
+      setInterval(() => { refreshChart('co2', charts.co2); refreshChart('pm2_5', charts.pm2_5); }, 60000);
+    }
+    window.addEventListener('load', start);
+  </script>
+</body>
+</html>
