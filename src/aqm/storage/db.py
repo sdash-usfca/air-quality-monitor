@@ -58,6 +58,23 @@ class Database:
         with self._connect() as conn:
             return [(ts, value) for ts, value in conn.execute(query, (metric, since_ts))]
 
+    def history_bucketed(
+        self, metric: str, since_ts: int, bucket_seconds: int
+    ) -> List[Tuple[int, float]]:
+        """Downsample: average values into fixed time buckets so long ranges stay
+        cheap to send and render. Returns [(bucket_start_ts, avg_value), ...]."""
+        bucket_seconds = max(1, int(bucket_seconds))
+        query = """
+            SELECT (ts / ?) * ? AS bucket, AVG(value)
+            FROM readings
+            WHERE metric = ? AND ts >= ?
+            GROUP BY bucket
+            ORDER BY bucket
+        """
+        with self._connect() as conn:
+            rows = conn.execute(query, (bucket_seconds, bucket_seconds, metric, since_ts))
+            return [(int(b), round(v, 3)) for b, v in rows]
+
     def prune(self, older_than_ts: int) -> None:
         with self._connect() as conn:
             conn.execute("DELETE FROM readings WHERE ts < ?", (older_than_ts,))

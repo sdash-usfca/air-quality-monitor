@@ -52,6 +52,29 @@ def create_app(config: Optional[Config] = None) -> Flask:
         since = int(time.time() - hours * 3600)
         return jsonify({"metric": metric, "points": db.history(metric, since)})
 
+    @app.route("/api/metrics")
+    def api_metrics():
+        """Metadata for every metric, so the frontend can build charts + thresholds."""
+        out = []
+        for key in DISPLAY_ORDER:
+            spec = METRICS[key]
+            out.append({
+                "key": key, "label": spec.label, "unit": spec.unit,
+                "good_max": spec.good_max, "moderate_max": spec.moderate_max,
+                "precision": spec.precision,
+            })
+        return jsonify({"metrics": out})
+
+    @app.route("/api/history_all")
+    def api_history_all():
+        """Downsampled history for all metrics in one request (~`target` points each)."""
+        hours = float(request.args.get("hours", 24))
+        target = 300
+        since = int(time.time() - hours * 3600)
+        bucket = max(int(config.interval_seconds), int(hours * 3600 / target) or 1)
+        series = {key: db.history_bucketed(key, since, bucket) for key in DISPLAY_ORDER}
+        return jsonify({"hours": hours, "bucket_seconds": bucket, "series": series})
+
     @app.route("/healthz")
     def healthz():
         return jsonify({"ok": True})
