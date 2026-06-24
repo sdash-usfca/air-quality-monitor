@@ -1,14 +1,15 @@
 [Unit]
 Description=AQM web dashboard
-After=network-online.target aqm-collector.service
-Wants=network-online.target
+After=network.target aqm-collector.service
+Wants=aqm-collector.service
 
 [Service]
 Type=simple
+# Adjust User and the paths to match your Pi.
 User=pi
 WorkingDirectory=/home/pi/air-quality-monitor
 ExecStart=/home/pi/air-quality-monitor/.venv/bin/aqm-web
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]

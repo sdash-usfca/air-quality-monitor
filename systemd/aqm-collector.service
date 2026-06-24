@@ -1,6 +1,6 @@
 [Unit]
 Description=AQM sensor collector
-After=multi-user.target
+After=network.target
 
 [Service]
 Type=simple
@@ -8,7 +8,7 @@ Type=simple
 User=pi
 WorkingDirectory=/home/pi/air-quality-monitor
 ExecStart=/home/pi/air-quality-monitor/.venv/bin/aqm-collect
-Restart=on-failure
+Restart=always
 RestartSec=5
 
 [Install]
