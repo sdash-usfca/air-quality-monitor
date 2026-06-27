@@ -19,8 +19,8 @@ class PMS5003Sensor(Sensor):
         self,
         device: str = "/dev/serial0",
         baudrate: int = 9600,
-        pin_enable: int = 22,
-        pin_reset: int = 27,
+        pin_enable: str = "GPIO22",  # physical pin 15 — SET/enable
+        pin_reset: str = "GPIO27",   # physical pin 13 — RESET
     ) -> None:
         from pms5003 import PMS5003  # noqa: import lazily
 
