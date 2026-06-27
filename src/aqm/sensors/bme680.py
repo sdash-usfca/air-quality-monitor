@@ -1,8 +1,13 @@
 """Bosch BME680 — VOC/gas resistance + pressure over I²C (0x76 or 0x77).
 
-By default reports only pressure + gas, leaving temperature/humidity to the
-SCD41 (avoids two sensors writing the same metric). Set include_temp_humidity=True
-if the BME680 is your only temperature/humidity source.
+Reports pressure, gas, temperature and humidity. When an SCD41 is also configured
+and listed *first*, the collector's "first sensor wins" merge lets the SCD41's
+(self-heating-free) temp/humidity take over automatically, so it's safe to leave
+include_temp_humidity on — the BME680's values are simply ignored when a better
+source is present. Set include_temp_humidity=False to suppress them outright.
+
+Note: the BME680's own temperature reads slightly high (~1-2°C) because the gas
+heater warms the package; prefer the SCD41 for temperature when you have one.
 
 Requires the Pi extras:  pip install -e ".[pi]"
 Needs on-device testing (no hardware in CI).
@@ -17,7 +22,7 @@ from .base import Sensor
 class BME680Sensor(Sensor):
     key = "bme680"
 
-    def __init__(self, address: int = 0x76, include_temp_humidity: bool = False) -> None:
+    def __init__(self, address: int = 0x77, include_temp_humidity: bool = True) -> None:  # SDO→3.3V
         import board  # noqa: import lazily
         import busio
         import adafruit_bme680
