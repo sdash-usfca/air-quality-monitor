@@ -18,6 +18,7 @@ from ..storage.db import Database
 def create_app(config: Optional[Config] = None) -> Flask:
     config = config or load_config()
     app = Flask(__name__)
+    app.config["TEMPLATES_AUTO_RELOAD"] = True  # pick up index.html edits without a restart
     db = Database(config.db_path)
 
     @app.route("/")

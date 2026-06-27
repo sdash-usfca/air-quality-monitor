@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Air Quality</title>
+  <title>Air Quality Monitor</title>
   <style>
     :root {
       --bg: #0f0f13; --card: #1c1c24; --card2: #16161d; --fg: #ececec; --muted: #8a8a96;
@@ -12,27 +12,71 @@
     * { box-sizing: border-box; }
     body { margin: 0; background: var(--bg); color: var(--fg);
       font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
-    header { display: flex; align-items: baseline; justify-content: space-between;
-      flex-wrap: wrap; gap: 8px; padding: 18px 24px 8px; }
-    h1 { margin: 0; font-size: 20px; font-weight: 600; }
-    #updated { color: var(--muted); font-size: 13px; }
+    header { display: flex; flex-direction: column; align-items: center; text-align: center;
+      gap: 2px; padding: 14px 24px 6px; }
+    .clock { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: .01em; }
+    .date { color: var(--muted); font-size: 15px; }
+    h1 { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--muted); }
+    #updated { color: var(--muted); font-size: 12px; }
+    .trend { font-size: 14px; margin-left: 6px; color: var(--muted); font-weight: 700; }
+    .trend.up { color: #e6a86b; } .trend.down { color: #6bb0e6; }
 
     /* Summary banner */
-    .banner { margin: 8px 24px 4px; border-radius: 16px; padding: 18px 22px;
-      display: flex; align-items: center; gap: 18px; background: var(--card);
-      border-left: 10px solid var(--unknown); }
+    .banner { margin: 8px 24px 4px; border-radius: 16px; padding: 16px 26px;
+      display: flex; align-items: center; justify-content: center; gap: 28px;
+      background: var(--card); border-left: 10px solid var(--unknown); }
     .banner.good { border-left-color: var(--good); }
     .banner.moderate { border-left-color: var(--moderate); }
     .banner.poor { border-left-color: var(--poor); }
     .banner .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--unknown); flex: none; }
     .banner.good .dot { background: var(--good); } .banner.moderate .dot { background: var(--moderate); }
     .banner.poor .dot { background: var(--poor); }
-    .banner .headline { font-size: 22px; font-weight: 700; }
-    .banner .sub { color: var(--muted); font-size: 14px; margin-top: 2px; }
+    .status-text { text-align: left; max-width: 58%; }
+    .banner .headline { font-size: 26px; font-weight: 800; }
+    .banner .sub { color: var(--muted); font-size: 15px; margin-top: 4px; }
+    .tips { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.55; color: var(--fg); }
+    .tips:empty { display: none; }
+
+    /* Mascot — air-quality bird */
+    .mascot { position: relative; width: 150px; height: 150px; flex: none;
+      display: flex; align-items: center; justify-content: center; }
+    .aura { position: absolute; width: 116px; height: 116px; border-radius: 50%;
+      background: var(--unknown); filter: blur(26px); opacity: .4; }
+    .banner.good .aura { background: var(--good); }
+    .banner.moderate .aura { background: var(--moderate); }
+    .banner.poor .aura { background: var(--poor); }
+    .bird { position: relative; width: 132px; height: 132px; transform-origin: 50% 88%; }
+    .bird .body { fill: #ffd54a; } .bird .belly { fill: #fff6cf; } .bird .wing { fill: #f4b400; }
+    .bird .beak { fill: #f6a93b; } .bird .leg { stroke: #f6a93b; stroke-width: 3; stroke-linecap: round; }
+    .bird .pupil { fill: #16161d; }
+    .bird .cheek { fill: #ff9bb3; opacity: 0; }
+    .bird .smile, .bird .flat, .bird .frown { fill: none; stroke: #16161d; stroke-width: 3; stroke-linecap: round; display: none; }
+    .bird .eye-x { display: none; }
+    .bird .sweat { fill: #7fd3ff; opacity: 0; }
+    .bird .note { fill: #ffffff; opacity: 0; }
+    .banner .bird .smile { display: block; }              /* default + good = happy */
+    .banner.moderate .bird .smile, .banner.poor .bird .smile { display: none; }
+    .banner.moderate .bird .flat { display: block; }
+    .banner.poor .bird .frown { display: block; }
+    .banner.good .bird .cheek { opacity: 1; }
+    .banner.good .bird .note { opacity: 1; animation: note 2.2s ease-in-out infinite; }
+    .banner.poor .bird .eye-open { display: none; }
+    .banner.poor .bird .eye-x { display: block; }
+    .banner.poor .bird .sweat { opacity: .9; animation: drip 2.4s ease-in-out infinite; }
+    .banner.poor .bird .body { fill: #9fb0a8; } .banner.poor .bird .wing { fill: #7e8f87; } .banner.poor .bird .belly { fill: #e2e8e4; }
+    .banner.good .bird { animation: bob 1.7s ease-in-out infinite; }
+    .banner.moderate .bird { animation: sway 3.2s ease-in-out infinite; }
+    .banner.poor .bird { animation: pant 1.5s ease-in-out infinite; }
+    @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-9px) } }
+    @keyframes sway { 0%,100% { transform: rotate(-3deg) } 50% { transform: rotate(3deg) } }
+    @keyframes pant { 0%,100% { transform: translateY(5px) scale(.96) } 50% { transform: translateY(7px) scale(.93) } }
+    @keyframes note { 0% { opacity: 0; transform: translateY(0) } 25% { opacity: 1 } 100% { opacity: 0; transform: translateY(-20px) } }
+    @keyframes drip { 0%,100% { transform: translateY(0); opacity: .85 } 50% { transform: translateY(5px); opacity: 1 } }
+    @media (prefers-reduced-motion: reduce) { .bird { animation: none !important } }
 
     /* Cards */
-    .grid { display: grid; gap: 12px; padding: 12px 24px;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 24px; }
+    .grid .card { flex: 1 1 140px; }
     .card { background: var(--card); border-radius: 14px; padding: 14px; border-left: 6px solid var(--unknown); }
     .card.good { border-left-color: var(--good); } .card.moderate { border-left-color: var(--moderate); }
     .card.poor { border-left-color: var(--poor); }
@@ -57,23 +101,74 @@
     .chart-head .csub { color: var(--muted); font-size: 11px; }
     .cdesc { color: var(--muted); font-size: 12px; line-height: 1.35; margin: -2px 0 8px; }
     footer { color: var(--muted); font-size: 12px; padding: 0 24px 24px; }
+
+    /* Offline/stale badge + night dimming */
+    .stale-badge { display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: var(--poor); color: #fff; font-size: 13px; font-weight: 600; padding: 6px 14px;
+      border-radius: 999px; z-index: 10000; box-shadow: 0 2px 12px rgba(0,0,0,.45); }
+    .stale-badge.show { display: block; }
+    #nightveil { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none;
+      transition: opacity 3s linear; z-index: 9998; }
+
+    /* Daily insights strip */
+    .insights { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 2px 24px 8px; }
+    .ins-title { color: var(--muted); font-size: 13px; font-weight: 700; margin-right: 2px; }
+    .chip { background: var(--card2); border-radius: 10px; padding: 6px 12px; }
+    .chip .cl { color: var(--muted); font-size: 11px; }
+    .chip .cv { font-size: 15px; font-weight: 700; margin-top: 1px; }
+    .aqi-pill { padding: 5px 12px; border-radius: 999px; font-size: 14px; font-weight: 700; color: #06121b; }
+    .aqi-pill.good { background: var(--good); } .aqi-pill.moderate { background: var(--moderate); }
+    .aqi-pill.poor { background: var(--poor); color: #fff; }
+    .ins-note { color: var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
   <header>
-    <h1>🌬️ Air Quality</h1>
+    <div class="clock" id="clock">--:--</div>
+    <div class="date" id="date"></div>
+    <h1>🌬️ Air Quality Monitor</h1>
     <div id="updated">connecting…</div>
   </header>
 
   <div id="banner" class="banner">
-    <div class="dot"></div>
-    <div>
+    <div class="mascot">
+      <div class="aura"></div>
+      <svg class="bird" viewBox="0 0 140 140" aria-hidden="true">
+        <path class="body" d="M30 88 q-16 -2 -20 12 q16 0 24 -5 z"/>
+        <ellipse class="body" cx="78" cy="84" rx="42" ry="40"/>
+        <ellipse class="belly" cx="78" cy="92" rx="26" ry="28"/>
+        <path class="wing" d="M94 76 q22 5 17 29 q-14 -2 -21 -13 z"/>
+        <line class="leg" x1="70" y1="122" x2="70" y2="134"/>
+        <line class="leg" x1="88" y1="122" x2="88" y2="134"/>
+        <polygon class="beak" points="40,74 60,70 58,84"/>
+        <g class="eye-open">
+          <circle cx="68" cy="66" r="15" fill="#fff"/>
+          <circle class="pupil" cx="71" cy="67" r="7.5"/>
+          <circle cx="74" cy="64" r="2.6" fill="#fff"/>
+        </g>
+        <g class="eye-x" stroke="#16161d" stroke-width="3" stroke-linecap="round">
+          <line x1="62" y1="60" x2="74" y2="72"/><line x1="74" y1="60" x2="62" y2="72"/>
+        </g>
+        <circle class="cheek" cx="56" cy="86" r="6"/>
+        <path class="smile" d="M48 94 q11 10 23 2"/>
+        <path class="flat" d="M50 96 h20"/>
+        <path class="frown" d="M48 100 q11 -10 23 -2"/>
+        <path class="sweat" d="M98 60 q-6 9 0 14 q6 -5 0 -14 z"/>
+        <text class="note" x="106" y="42" font-size="22">&#9834;</text>
+      </svg>
+    </div>
+    <div class="status-text">
       <div class="headline" id="banner-headline">—</div>
       <div class="sub" id="banner-sub">waiting for readings…</div>
+      <ul class="tips" id="banner-tips"></ul>
     </div>
   </div>
 
-  <section id="cards" class="grid"></section>
+  <section id="cards-main" class="grid"></section>
+  <section id="cards-particles" class="grid"></section>
+
+  <section id="insights" class="insights"></section>
+  <section id="outdoor" class="insights"></section>
 
   <div class="controls">
     <span class="lbl">History:</span>
@@ -85,6 +180,8 @@
   <section id="charts" class="charts"></section>
 
   <footer>Live data from this device · cards refresh every 5s</footer>
+  <div id="stale" class="stale-badge"></div>
+  <div id="nightveil"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
@@ -108,6 +205,118 @@
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
+    // ---- Live clock ----
+    function tickClock() {
+      const d = new Date();
+      document.getElementById('clock').textContent =
+        d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('date').textContent =
+        d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    // ---- Auto night-dimming (evening → dim, morning → bright) ----
+    function nightVeil() {
+      const n = new Date(); const h = n.getHours() + n.getMinutes() / 60;
+      let dim;
+      if (h >= 7 && h < 20) dim = 0;                 // daytime: full bright
+      else if (h >= 20 && h < 22) dim = 0.5 * (h - 20) / 2;  // evening ramp down
+      else if (h >= 6 && h < 7) dim = 0.5 * (7 - h);         // morning ramp up
+      else dim = 0.5;                                // night: dimmed
+      document.getElementById('nightveil').style.opacity = dim;
+    }
+
+    // ---- Comfort bands for metrics with no one-sided threshold ----
+    const COMFORT = {
+      temperature: { good: [19, 25], moderate: [16, 28] },
+      humidity:    { good: [40, 60], moderate: [30, 70] },
+    };
+    function comfortStatus(key, v) {
+      const c = COMFORT[key]; if (!c) return null;
+      if (v >= c.good[0] && v <= c.good[1]) return 'good';
+      if (v >= c.moderate[0] && v <= c.moderate[1]) return 'moderate';
+      return 'poor';
+    }
+    function effStatus(m) {
+      return (m.status && m.status !== 'unknown') ? m.status
+           : (comfortStatus(m.key, m.value) || 'unknown');
+    }
+
+    // ---- Trend (rising/falling vs ~15 min ago) ----
+    let trendByKey = {};
+    function computeTrend(series) {
+      if (!series || series.length < 3) return null;
+      const lastTs = series[series.length - 1][0];
+      const last = series[series.length - 1][1];
+      let prev = series[0][1];
+      for (let i = series.length - 1; i >= 0; i--) {
+        if (series[i][0] <= lastTs - 900) { prev = series[i][1]; break; }
+      }
+      const denom = Math.abs(prev) > 1e-6 ? Math.abs(prev) : 1;
+      const pct = (last - prev) / denom;
+      return { dir: pct > 0.02 ? 'up' : pct < -0.02 ? 'down' : 'flat' };
+    }
+    function trendBadge(key) {
+      const t = trendByKey[key]; if (!t) return '';
+      const g = t.dir === 'up' ? '▲' : t.dir === 'down' ? '▼' : '–';
+      return ` <span class="trend ${t.dir}" title="vs ~15 min ago">${g}</span>`;
+    }
+
+    // ---- Daily insights (min/max/avg over the visible range) ----
+    function stats(series) {
+      if (!series || !series.length) return null;
+      let mn = Infinity, mx = -Infinity, sum = 0;
+      series.forEach(p => { const v = p[1]; if (v < mn) mn = v; if (v > mx) mx = v; sum += v; });
+      return { min: mn, max: mx, avg: sum / series.length };
+    }
+    function chip(label, val) { return `<div class="chip"><div class="cl">${label}</div><div class="cv">${val}</div></div>`; }
+    function renderInsights(series) {
+      const co2 = stats(series.co2), pm = stats(series.pm2_5),
+            t = stats(series.temperature), h = stats(series.humidity);
+      const chips = [];
+      if (co2) { chips.push(chip('CO₂ peak', Math.round(co2.max) + ' ppm'));
+                 chips.push(chip('CO₂ avg', Math.round(co2.avg) + ' ppm')); }
+      if (pm) chips.push(chip('PM2.5 peak', Math.round(pm.max) + ' µg/m³'));
+      if (t) chips.push(chip('Temp range', t.min.toFixed(1) + '–' + t.max.toFixed(1) + ' °C'));
+      if (h) chips.push(chip('Humidity', Math.round(h.min) + '–' + Math.round(h.max) + ' %'));
+      const label = currentHours <= 1 ? 'Last hour' : currentHours >= 48 ? 'Last 7 days' : 'Last 24h';
+      document.getElementById('insights').innerHTML =
+        `<div class="ins-title">📊 ${label}</div>` + chips.join('');
+    }
+
+    // ---- Outdoor air quality (Open-Meteo, free + keyless) ----
+    const LOCATION = { name: 'Auburn, WA', lat: 47.3073, lon: -122.2285 };
+    function aqiLevel(aqi) {
+      if (aqi <= 50) return ['good', 'Good'];
+      if (aqi <= 100) return ['moderate', 'Moderate'];
+      if (aqi <= 150) return ['poor', 'Unhealthy (sensitive)'];
+      return ['poor', 'Unhealthy'];
+    }
+    async function fetchOutdoor() {
+      const el = document.getElementById('outdoor');
+      try {
+        const url = 'https://air-quality-api.open-meteo.com/v1/air-quality?latitude='
+          + LOCATION.lat + '&longitude=' + LOCATION.lon + '&current=us_aqi,pm2_5,pm10&timezone=auto';
+        const c = (await (await fetch(url)).json()).current;
+        const aqi = Math.round(c.us_aqi);
+        const [cls, lbl] = aqiLevel(aqi);
+        const indoor = (latestByKey['pm2_5'] || {}).value;
+        let note = '';
+        if (indoor != null) {
+          const io = Math.round(indoor), oo = Math.round(c.pm2_5);
+          note = io <= oo ? `· indoor PM2.5 ${io} — cleaner than outside 🌿`
+                          : `· indoor PM2.5 ${io} — higher than outside, ventilate?`;
+        }
+        el.innerHTML =
+          `<span class="ins-title">🌍 Outdoor · ${LOCATION.name}</span>`
+          + `<span class="aqi-pill ${cls}">US AQI ${aqi} · ${lbl}</span>`
+          + chip('Outdoor PM2.5', Math.round(c.pm2_5) + ' µg/m³')
+          + chip('Outdoor PM10', Math.round(c.pm10) + ' µg/m³')
+          + `<span class="ins-note">${note}</span>`;
+      } catch (e) {
+        el.innerHTML = '<span class="ins-title">🌍 Outdoor air unavailable</span>';
+      }
+    }
+
     // ---- Cards + banner (from /api/latest) ----
     async function refreshLatest() {
       try {
@@ -115,41 +324,71 @@
         latestByKey = {};
         data.metrics.forEach(m => latestByKey[m.key] = m);
 
-        const cards = document.getElementById('cards');
+        const main = document.getElementById('cards-main');
+        const particles = document.getElementById('cards-particles');
         if (!data.metrics.length) {
           document.getElementById('updated').textContent = 'no readings yet — is the collector running?';
           return;
         }
-        cards.innerHTML = data.metrics.map(m => `
-          <div class="card ${m.status}">
+        data.metrics.forEach(m => m.estatus = effStatus(m));
+        const cardHTML = m => `
+          <div class="card ${m.estatus}">
             <div class="label">${m.label}</div>
-            <div class="value">${m.display}<span class="unit">${m.unit}</span></div>
+            <div class="value">${m.display}<span class="unit">${m.unit}</span>${trendBadge(m.key)}</div>
             <div class="age">${ago(m.age_seconds)}</div>
-          </div>`).join('');
+          </div>`;
+        const isPM = m => m.key.startsWith('pm');
+        main.innerHTML = data.metrics.filter(m => !isPM(m)).map(cardHTML).join('');
+        const pm = data.metrics.filter(isPM);
+        particles.innerHTML = pm.map(cardHTML).join('');
+        particles.style.display = pm.length ? '' : 'none';   // hide the row if no PM sensor
 
         updateBanner(data.metrics);
         document.getElementById('updated').textContent = 'updated ' + new Date().toLocaleTimeString();
+        const minAge = Math.min(...data.metrics.map(m => m.age_seconds));
+        const stale = document.getElementById('stale');
+        if (minAge > 90) { stale.textContent = '⚠ Data stale — last reading ' + ago(minAge); stale.classList.add('show'); }
+        else stale.classList.remove('show');
       } catch (e) {
         document.getElementById('updated').textContent = 'connection lost…';
+        const stale = document.getElementById('stale');
+        stale.textContent = '⚠ Disconnected from monitor'; stale.classList.add('show');
       }
     }
 
+    const TITLES = { good: 'Air Quality: Good', moderate: 'Air Quality: Fair', poor: 'Air Quality: Poor' };
+    const TIP = {
+      co2: 'Open a window or improve ventilation to bring CO₂ down.',
+      pm: 'Cut particulates — check cooking/smoke and run an air purifier.',
+    };
+    function tipFor(m) {
+      if (m.key === 'co2') return TIP.co2;
+      if (m.key.startsWith('pm')) return TIP.pm;
+      if (m.key === 'temperature') return m.value > 25 ? "It's warm — open a window or turn the heating down." : "It's chilly — a little heating would help.";
+      if (m.key === 'humidity') return m.value > 60 ? "Humid — ventilate or run a dehumidifier." : "Dry air — a humidifier improves comfort.";
+      return null;
+    }
     function updateBanner(metrics) {
-      const graded = metrics.filter(m => m.status in RANK);
+      const graded = metrics.filter(m => m.estatus in RANK);
       const banner = document.getElementById('banner');
       const headline = document.getElementById('banner-headline');
       const sub = document.getElementById('banner-sub');
-      if (!graded.length) { banner.className = 'banner'; headline.textContent = '—'; sub.textContent = 'no graded metrics'; return; }
+      const tips = document.getElementById('banner-tips');
+      tips.innerHTML = '';
+      if (!graded.length) { banner.className = 'banner'; headline.textContent = '—'; sub.textContent = 'waiting for readings…'; return; }
       let worst = 'good';
-      graded.forEach(m => { if (RANK[m.status] > RANK[worst]) worst = m.status; });
+      graded.forEach(m => { if (RANK[m.estatus] > RANK[worst]) worst = m.estatus; });
       banner.className = 'banner ' + worst;
-      headline.textContent = 'Air Quality: ' + worst.charAt(0).toUpperCase() + worst.slice(1);
+      headline.textContent = TITLES[worst];
       if (worst === 'good') {
-        sub.textContent = 'All clear — everything within healthy limits.';
+        sub.textContent = 'All clear — the air looks healthy. 🐦';
       } else {
-        const drivers = graded.filter(m => m.status === worst)
-          .map(m => `${m.label} ${m.display} ${m.unit}`).join(' · ');
+        const drivers = graded.filter(m => m.estatus === worst)
+          .map(m => `${m.label} ${m.display}${m.unit}`).join(' · ');
         sub.textContent = 'Driven by: ' + drivers;
+        const tset = new Set();
+        graded.filter(m => m.estatus !== 'good').forEach(m => { const t = tipFor(m); if (t) tset.add(t); });
+        tips.innerHTML = [...tset].map(t => `<li>${t}</li>`).join('');
       }
     }
 
@@ -217,7 +456,12 @@
     async function refreshHistory() {
       try {
         const data = await (await fetch('/api/history_all?hours=' + currentHours)).json();
-        metricsMeta.forEach(meta => fillChart(meta, data.series[meta.key] || []));
+        metricsMeta.forEach(meta => {
+          const s = data.series[meta.key] || [];
+          fillChart(meta, s);
+          const t = computeTrend(s); if (t) trendByKey[meta.key] = t;
+        });
+        renderInsights(data.series);
       } catch (e) { /* keep last good charts */ }
     }
 
@@ -229,14 +473,17 @@
     }
 
     async function init() {
+      tickClock(); setInterval(tickClock, 1000);
+      nightVeil(); setInterval(nightVeil, 30000);
       try {
         metricsMeta = (await (await fetch('/api/metrics')).json()).metrics;
       } catch (e) { metricsMeta = []; }
       buildCharts();
       document.querySelectorAll('.rangebtn').forEach(b =>
         b.addEventListener('click', () => setRange(parseInt(b.dataset.hours, 10), b)));
+      await refreshHistory();   // populate trends first so cards show arrows on first paint
       await refreshLatest();
-      await refreshHistory();
+      fetchOutdoor(); setInterval(fetchOutdoor, 600000);   // outdoor AQI every 10 min
       setInterval(refreshLatest, 5000);
       setInterval(refreshHistory, 60000);
     }
