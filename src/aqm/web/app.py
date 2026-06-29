@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 from typing import Optional
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, make_response, render_template, request
 
 from ..config import Config, load_config
 from ..models import DISPLAY_ORDER, METRICS
@@ -23,7 +23,9 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     @app.route("/")
     def index():
-        return render_template("index.html")
+        resp = make_response(render_template("index.html"))
+        resp.headers["Cache-Control"] = "no-store"   # always serve the latest dashboard
+        return resp
 
     @app.route("/api/latest")
     def api_latest():

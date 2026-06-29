@@ -16,7 +16,7 @@
       gap: 2px; padding: 14px 24px 6px; }
     .clock { font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: .01em; }
     .date { color: var(--muted); font-size: 15px; }
-    h1 { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: var(--muted); }
+    h1 { margin: 4px 0 0; font-size: 18px; font-weight: 600; color: #fff; }
     #updated { color: var(--muted); font-size: 12px; }
     .trend { font-size: 14px; margin-left: 6px; color: var(--muted); font-weight: 700; }
     .trend.up { color: #e6a86b; } .trend.down { color: #6bb0e6; }
@@ -36,6 +36,8 @@
     .banner .sub { color: var(--muted); font-size: 15px; margin-top: 4px; }
     .tips { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.55; color: var(--fg); }
     .tips:empty { display: none; }
+    .aqi-line { margin-top: 6px; font-size: 14px; font-weight: 700; color: var(--muted); }
+    .aqi-line.good { color: var(--good); } .aqi-line.moderate { color: var(--moderate); } .aqi-line.poor { color: var(--poor); }
 
     /* Mascot — air-quality bird */
     .mascot { position: relative; width: 150px; height: 150px; flex: none;
@@ -77,6 +79,16 @@
     /* Cards */
     .grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 10px 24px; }
     .grid .card { flex: 1 1 140px; }
+
+    /* Hero (mascot) on the left + metrics table on the right */
+    .top { display: flex; gap: 14px; padding: 8px 24px 4px; align-items: stretch;
+      min-height: calc(100vh - 130px); }
+    .banner.hero { margin: 0; flex: 0 0 36%; flex-direction: column; justify-content: center; gap: 16px; }
+    .hero .mascot { width: 100%; height: auto; flex: none; }
+    .hero .bird { width: 88%; max-width: 340px; height: auto; }          /* big, dominant bird */
+    .hero .aura { width: 240px; height: 240px; }
+    .hero .status-text { flex: none; max-width: 100%; text-align: center; }   /* info BELOW the bird */
+    .metrics { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .card { background: var(--card); border-radius: 14px; padding: 14px; border-left: 6px solid var(--unknown); }
     .card.good { border-left-color: var(--good); } .card.moderate { border-left-color: var(--moderate); }
     .card.poor { border-left-color: var(--poor); }
@@ -130,7 +142,8 @@
     <div id="updated">connecting…</div>
   </header>
 
-  <div id="banner" class="banner">
+  <div class="top">
+  <div id="banner" class="banner hero">
     <div class="mascot">
       <div class="aura"></div>
       <svg class="bird" viewBox="0 0 140 140" aria-hidden="true">
@@ -161,11 +174,11 @@
       <div class="headline" id="banner-headline">—</div>
       <div class="sub" id="banner-sub">waiting for readings…</div>
       <ul class="tips" id="banner-tips"></ul>
+      <div class="aqi-line" id="banner-aqi"></div>
     </div>
   </div>
-
-  <section id="cards-main" class="grid"></section>
-  <section id="cards-particles" class="grid"></section>
+    <section id="metrics" class="metrics"></section>
+  </div>
 
   <section id="insights" class="insights"></section>
   <section id="outdoor" class="insights"></section>
@@ -291,6 +304,21 @@
       if (aqi <= 150) return ['poor', 'Unhealthy (sensitive)'];
       return ['poor', 'Unhealthy'];
     }
+    // US AQI from PM concentrations (EPA breakpoints) — for the indoor reading.
+    const BP_PM25 = [[0,12,0,50],[12.1,35.4,51,100],[35.5,55.4,101,150],[55.5,150.4,151,200],[150.5,250.4,201,300],[250.5,500.4,301,500]];
+    const BP_PM10 = [[0,54,0,50],[55,154,51,100],[155,254,101,150],[255,354,151,200],[355,424,201,300],[425,604,301,500]];
+    function aqiPiece(c, bp) {
+      for (const b of bp) { if (c <= b[1]) return Math.round((b[3]-b[2])/(b[1]-b[0])*(c-b[0])+b[2]); }
+      return 500;
+    }
+    function indoorAQI(metrics) {
+      const get = k => { const m = metrics.find(x => x.key === k); return m ? m.value : null; };
+      const p25 = get('pm2_5'), p10 = get('pm10');
+      let aqi = null;
+      if (p25 != null) aqi = aqiPiece(p25, BP_PM25);
+      if (p10 != null) { const a = aqiPiece(p10, BP_PM10); aqi = aqi == null ? a : Math.max(aqi, a); }
+      return aqi;
+    }
     async function fetchOutdoor() {
       const el = document.getElementById('outdoor');
       try {
@@ -324,8 +352,7 @@
         latestByKey = {};
         data.metrics.forEach(m => latestByKey[m.key] = m);
 
-        const main = document.getElementById('cards-main');
-        const particles = document.getElementById('cards-particles');
+        const metricsEl = document.getElementById('metrics');
         if (!data.metrics.length) {
           document.getElementById('updated').textContent = 'no readings yet — is the collector running?';
           return;
@@ -338,10 +365,8 @@
             <div class="age">${ago(m.age_seconds)}</div>
           </div>`;
         const isPM = m => m.key.startsWith('pm');
-        main.innerHTML = data.metrics.filter(m => !isPM(m)).map(cardHTML).join('');
-        const pm = data.metrics.filter(isPM);
-        particles.innerHTML = pm.map(cardHTML).join('');
-        particles.style.display = pm.length ? '' : 'none';   // hide the row if no PM sensor
+        const ordered = data.metrics.filter(m => !isPM(m)).concat(data.metrics.filter(isPM));
+        metricsEl.innerHTML = ordered.map(cardHTML).join('');
 
         updateBanner(data.metrics);
         document.getElementById('updated').textContent = 'updated ' + new Date().toLocaleTimeString();
@@ -375,10 +400,14 @@
       const sub = document.getElementById('banner-sub');
       const tips = document.getElementById('banner-tips');
       tips.innerHTML = '';
-      if (!graded.length) { banner.className = 'banner'; headline.textContent = '—'; sub.textContent = 'waiting for readings…'; return; }
+      const aqi = indoorAQI(metrics);
+      const aqiEl = document.getElementById('banner-aqi');
+      if (aqi != null) { const lv = aqiLevel(aqi); aqiEl.textContent = 'Indoor AQI ' + aqi + ' · ' + lv[1]; aqiEl.className = 'aqi-line ' + lv[0]; }
+      else { aqiEl.textContent = ''; aqiEl.className = 'aqi-line'; }
+      if (!graded.length) { banner.className = 'banner hero'; headline.textContent = '—'; sub.textContent = 'waiting for readings…'; return; }
       let worst = 'good';
       graded.forEach(m => { if (RANK[m.estatus] > RANK[worst]) worst = m.estatus; });
-      banner.className = 'banner ' + worst;
+      banner.className = 'banner hero ' + worst;
       headline.textContent = TITLES[worst];
       if (worst === 'good') {
         sub.textContent = 'All clear — the air looks healthy. 🐦';
