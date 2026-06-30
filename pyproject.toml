@@ -26,6 +26,9 @@ pi = [
     "pms5003>=1.0",
     "pillow>=9.0",
     "st7789>=0.0.4",
+    # Nest / Chromecast audio alerts (scripts/nest_alert.py):
+    "pychromecast>=14.0",
+    "gTTS>=2.5",
 ]
 # Just the display rendering — enough to preview the screen layout to a PNG on a laptop.
 display = ["pillow>=9.0"]
